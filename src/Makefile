@@ -1,4 +1,4 @@
-CFLAGS += -Wall -fPIC
+CFLAGS += -Wall -fPIC -static
 CPPFLAGS += $(shell pkg-config --cflags fuse)
 CPPFLAGS += -DFUSE_USE_VERSION=29
 
@@ -10,7 +10,7 @@ CPPFLAGS += -DLIBC_XATTR # glibc nowadays includes xattr
 
 LDFLAGS +=
 
-LIB = $(shell pkg-config --libs fuse) -lpthread
+LIB = $(shell pkg-config --libs fuse) -lpthread -ldl -static
 
 HASHTABLE_OBJ = hashtable.o hashtable_itr.o
 LIBUNIONFS_OBJ = fuse_ops.o opts.o debug.o findbranch.o readdir.o \
@@ -20,19 +20,16 @@ UNIONFS_OBJ = unionfs.o
 UNIONFSCTL_OBJ = unionfsctl.o
 
 
-all: unionfs unionfsctl libunionfs.a libunionfs.so
+all: unionfs unionfsctl libunionfs.a
 
 unionfs: $(UNIONFS_OBJ) libunionfs.a uioctl.h version.h
 	$(CC) $(LDFLAGS) -o $@ $(UNIONFS_OBJ) libunionfs.a $(LIB)
 
 unionfsctl: $(UNIONFSCTL_OBJ) uioctl.h version.h
-	$(CC) $(LDFLAGS) -o $@ $(UNIONFSCTL_OBJ)
+	$(CC) $(LDFLAGS) -o $@ $(UNIONFSCTL_OBJ) $(LIB)
 
 libunionfs.a: $(LIBUNIONFS_OBJ) $(HASHTABLE_OBJ) uioctl.h version.h
 	$(AR) rc $@ $(LIBUNIONFS_OBJ) $(HASHTABLE_OBJ)
-
-libunionfs.so: libunionfs.a
-	$(CC) -shared -o $@ $(LIBUNIONFS_OBJ) $(HASHTABLE_OBJ) $(LIB)
 
 clean:
 	rm -f unionfs
